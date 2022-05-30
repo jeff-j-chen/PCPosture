@@ -2,7 +2,7 @@ import sys
 import argparse
 import cv2
 from lib.preprocess import h36m_coco_format, revise_kpts
-from lib.hrnet.gen_kpts import gen_video_kpts, gen_frame_kpts
+from lib.hrnet.gen_kpts import gen_frame_kpts
 import os
 import numpy as np
 import torch
@@ -10,11 +10,9 @@ import glob
 from tqdm import tqdm
 import copy
 from IPython import embed
-
 sys.path.append(os.getcwd())
 from model.strided_transformer import Model
 from common.camera import normalize_screen_coordinates, camera_to_world
-
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
@@ -22,18 +20,19 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-tf.keras.backend.clear_session()
-from tensorflow.keras.layers import Input, Softmax, Dense, Dropout, BatchNormalization
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras import models
-from tensorflow.keras import layers
-from tensorflow.keras import optimizers
+# from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# tf.keras.backend.clear_session()
+# from tensorflow.keras.layers import Input, Softmax, Dense, Dropout, BatchNormalization
+# from sklearn.metrics import classification_report
+# from sklearn.metrics import confusion_matrix
+# from tensorflow.keras.applications import VGG16
+# from tensorflow.keras import models
+# from tensorflow.keras import layers
+# from tensorflow.keras import optimizers
 import random
-
 import gc
+import libs.model.model as libm
+from libs.dataset.h36m.data_utils import unNormalizeData
 
 
 gc.collect()
@@ -41,6 +40,8 @@ gc.collect()
 torch.cuda.empty_cache()
 
 keypoints = None
+
+
 def get_pose2D(frames):
     global keypoints
     print('\nGenerating 2D pose...')
@@ -55,21 +56,6 @@ frame = cv2.imread('/home/jeff/Documents/Code/FinalProject/demo/testimg.png')
 get_pose2D(frame)
 
 
-
-import sys
-# sys.path.append("../")
-
-import libs.model.model as libm
-from libs.dataset.h36m.data_utils import unNormalizeData
-import cv2
-import torch
-import numpy as np
-import imageio
-import matplotlib.pyplot as plt
-import tensorflow as tf
-from tensorflow import keras
-from tqdm import tqdm
-
 num_joints = 16
 gt_3d = False
 pose_connection = [[0, 7 - 6], [7 - 6, 8 - 6], [8 - 6, 9 - 6], [9 - 6, 10 - 6], [8 - 6, 11 - 6], [11 - 6, 12 - 6], [12 - 6, 13 - 6], [8 - 6, 14 - 6], [14 - 6, 15 - 6], [15 - 6, 16 - 6]]
@@ -77,9 +63,6 @@ re_order_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 # paths
 model_path = '/home/jeff/Documents/Code/FinalProject/demo/example_model.th'
 stats = np.load('/home/jeff/Documents/Code/FinalProject/demo/stats.npy', allow_pickle=True).item()
-dim_used_2d = stats['dim_use_2d']
-mean_2d = stats['mean_2d']
-std_2d = stats['std_2d']
 ckpt = torch.load(model_path)
 cascade = libm.get_cascade()
 input_size = 32
@@ -167,6 +150,7 @@ def plot_3d_ax(ax, elev, azim, pred, title=None):
     ax.view_init(elev=elev, azim=azim)
     return show3Dpose(re_order(pred), ax)
 
+
 test_model = tf.keras.models.load_model('/home/jeff/Documents/Code/FinalProject/demo/prettygoodtest.h5')
 val_model = tf.keras.models.load_model('/home/jeff/Documents/Code/FinalProject/demo/prettygoodval.h5')
 f = plt.figure(figsize=(15, 15))
@@ -176,7 +160,7 @@ t = np.load("/home/jeff/Documents/Code/FinalProject/output/keypoints.npy")
 skeleton_2d = keypoints[0][0]
 norm_ske_gt = normalize(skeleton_2d, re_order_indices).reshape(1, -1)
 pred = get_pred(cascade, torch.from_numpy(norm_ske_gt.astype(np.float32)))
-pred = unNormalizeData(pred.data.numpy(), stats['mean_3d'], stats['std_3d'], stats['dim_ignore_3d'] )
+pred = unNormalizeData(pred.data.numpy(), stats['mean_3d'], stats['std_3d'], stats['dim_ignore_3d'])
 ax3 = plt.subplot(1, 1, 1, projection='3d')
 outs = plot_3d_ax(ax=ax3, pred=pred, elev=5, azim=-80)
 plt.savefig('/home/jeff/Documents/Code/FinalProject/output/pred.png')
