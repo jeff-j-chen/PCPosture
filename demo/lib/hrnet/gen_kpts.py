@@ -82,7 +82,7 @@ def model_load(config):
     # print('HRNet network successfully loaded')
     
     return model
-
+    
 def gen_frame_kpts(frame, det_dim=416, num_people=1, gen_output=False):
     # Updating configuration
     args = parse_args()
@@ -98,12 +98,7 @@ def gen_frame_kpts(frame, det_dim=416, num_people=1, gen_output=False):
     bboxs, scores = yolo_det(frame, human_model, reso=det_dim, confidence=args.thred_score)
 
     if bboxs is None or not bboxs.any():
-        print('No person detected!')
-        bboxs = bboxs_pre
-        scores = scores_pre
-    else:
-        bboxs_pre = copy.deepcopy(bboxs)
-        scores_pre = copy.deepcopy(scores)
+        return None, None
 
     # Using Sort to track people
     people_track = people_sort.update(bboxs)
