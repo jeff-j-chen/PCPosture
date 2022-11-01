@@ -29,6 +29,9 @@ from model.strided_transformer import Model
 from common.camera import normalize_screen_coordinates, camera_to_world
 plt.tight_layout()
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+
 class PoseAnalyzer:
     def __init__(self, num_joints, pose_connection, re_order_indices, model_path, stats, cascade, input_size, output_size, goodbad_model, figure, threshold, arduino, red, green, font, font_size, font_thickness):
         self.num_joints = num_joints
@@ -75,8 +78,11 @@ class PoseAnalyzer:
     def gen_pose_2d(self, frame):
         # create 2d keypoints from a given frame
         self.keypoints, scores = gen_frame_kpts(frame, det_dim=416)
+        if self.keypoints is None:
+            return False
         self.keypoints, scores, valid_frames = h36m_coco_format(self.keypoints, scores)
         self.keypoints = revise_kpts(self.keypoints, scores, valid_frames)
+        return True
 
     def normalize(self, skeleton, re_order=None):
         # helper function to lift
@@ -189,6 +195,8 @@ class PoseAnalyzer:
         blank[0:600, 600:1200] = to_modify
         cv2.line(blank, (600, 0), (600, 600), (0, 0, 0), 4)
         cv2.line(blank, (1200, 0), (1200, 600), (0, 0, 0), 4)
+        if (2 * self.threshold <= 0):
+            self.threshold = 1
         green_frac = (self.posture_score + self.threshold) / (2 * self.threshold)
         circle_color = (
             round(self.red[0] * (1 - green_frac) + self.green[0] * green_frac),
@@ -209,13 +217,14 @@ class PoseAnalyzer:
         Main function to call, fully processes a given frame.
         '''
         self.is_available = False
-        self.gen_pose_2d(frame)
+        success = self.gen_pose_2d(frame)
+        if (not success):
+            return
         self.lift_and_save()
         self.is_available = True
 
     def update_threshold(self, new_threshold):
         self.threshold = new_threshold
-
 
 cv2.namedWindow("Posture Analyzer", flags=(cv2.WINDOW_GUI_NORMAL + cv2.WINDOW_AUTOSIZE))
 # initial = cv2.imread('/home/jeff/Documents/Code/FinalProject/demo/testimg.png')

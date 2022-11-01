@@ -37,7 +37,6 @@ def coco_h36m(keypoints):
 
 
 def h36m_coco_format(keypoints, scores):
-    assert len(keypoints.shape) == 4 and len(scores.shape) == 3
 
     h36m_kpts = []
     h36m_scores = []
