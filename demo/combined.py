@@ -20,12 +20,12 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patheffects as PathEffects
 
-import libs.model.model as libm
-from lib.hrnet.gen_kpts import gen_frame_kpts
-from lib.preprocess import h36m_coco_format, revise_kpts
-from libs.dataset.h36m.data_utils import unNormalizeData
+import libs_evoskeleton.model.model as libm
+from libs_strided.hrnet.gen_kpts import gen_frame_kpts
+from libs_strided.preprocess import h36m_coco_format, revise_kpts
+from libs_evoskeleton.dataset.h36m.data_utils import unNormalizeData
 
-from model.strided_transformer import Model
+from model_strided.strided_transformer import Model
 from common.camera import normalize_screen_coordinates, camera_to_world
 plt.tight_layout()
 
@@ -159,7 +159,7 @@ class PoseAnalyzer:
         pred = unNormalizeData(pred.data.numpy(), self.stats['mean_3d'], self.stats['std_3d'], self.stats['dim_ignore_3d'])
         ax3 = plt.subplot(1, 1, 1, projection='3d')
         outs = self.plot_3d_ax(ax=ax3, pred=pred, elev=10, azim=-105)
-        plt.savefig('/home/jeff/Documents/Code/FinalProject/output/pred.png')
+        plt.savefig('/home/jeff/Documents/Code/PCPosture/output/pred.png')
         # lift 2d points into 3d and plot it
 
         proper = np.expand_dims(np.array(outs), axis=0)
@@ -178,7 +178,7 @@ class PoseAnalyzer:
         else:
             self.arduino.write(str(0).encode())
         # use my model to evaluate good/bad
-        to_modify = cv2.imread('/home/jeff/Documents/Code/FinalProject/output/pred.png')
+        to_modify = cv2.imread('/home/jeff/Documents/Code/PCPosture/output/pred.png')
         # put final onto the bottom left corner of the image in bold font
         text_size, base_line = cv2.getTextSize(final, self.font, self.font_size, self.font_thickness)
         text_width,text_height = text_size
@@ -227,19 +227,19 @@ class PoseAnalyzer:
         self.threshold = new_threshold
 
 cv2.namedWindow("Posture Analyzer", flags=(cv2.WINDOW_GUI_NORMAL + cv2.WINDOW_AUTOSIZE))
-# initial = cv2.imread('/home/jeff/Documents/Code/FinalProject/demo/testimg.png')
+# initial = cv2.imread('/home/jeff/Documents/Code/PCPosture/demo/testimg.png')
 # cv2.imshow("Posture Analyzer", initial)
 
 poseAnalyzer = PoseAnalyzer(
     num_joints=16,
     pose_connection=[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [5, 6], [6, 7], [2, 8], [8, 9], [9, 10]],
     re_order_indices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16],
-    model_path='/home/jeff/Documents/Code/FinalProject/demo/example_model.th',
-    stats=np.load('/home/jeff/Documents/Code/FinalProject/demo/stats.npy', allow_pickle=True).item(),
+    model_path='/home/jeff/Documents/Code/PCPosture/demo/example_model.th',
+    stats=np.load('/home/jeff/Documents/Code/PCPosture/demo/stats.npy', allow_pickle=True).item(),
     cascade=libm.get_cascade(),
     input_size=32,
     output_size=48,
-    goodbad_model=tf.keras.models.load_model('/home/jeff/Documents/Code/FinalProject/demo/prettygoodtest.h5'),
+    goodbad_model=tf.keras.models.load_model('/home/jeff/Documents/Code/PCPosture/demo/prettygoodtest.h5'),
     figure=plt.figure(figsize=(6, 6)),
     threshold=5,
     arduino=serial.Serial(port='/dev/ttyACM0', baudrate=9600, timeout=1),
