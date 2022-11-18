@@ -227,19 +227,18 @@ class PoseAnalyzer:
         self.threshold = new_threshold
 
 cv2.namedWindow("Posture Analyzer", flags=(cv2.WINDOW_GUI_NORMAL + cv2.WINDOW_AUTOSIZE))
-# initial = cv2.imread('/home/jeff/Documents/Code/PCPosture/demo/testimg.png')
 # cv2.imshow("Posture Analyzer", initial)
 
 poseAnalyzer = PoseAnalyzer(
     num_joints=16,
     pose_connection=[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [5, 6], [6, 7], [2, 8], [8, 9], [9, 10]],
     re_order_indices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16],
-    model_path='/home/jeff/Documents/Code/PCPosture/demo/example_model.th',
-    stats=np.load('/home/jeff/Documents/Code/PCPosture/demo/stats.npy', allow_pickle=True).item(),
+    model_path='/home/jeff/Documents/Code/PCPosture/h36m_model.th',
+    stats=np.load('/home/jeff/Documents/Code/PCPosture/stats_evoskeleton.npy', allow_pickle=True).item(),
     cascade=libm.get_cascade(),
     input_size=32,
     output_size=48,
-    goodbad_model=tf.keras.models.load_model('/home/jeff/Documents/Code/PCPosture/demo/prettygoodtest.h5'),
+    goodbad_model=tf.keras.models.load_model('/home/jeff/Documents/Code/PCPosture/posture_eval.h5'),
     figure=plt.figure(figsize=(6, 6)),
     threshold=5,
     arduino=serial.Serial(port='/dev/ttyACM0', baudrate=9600, timeout=1),

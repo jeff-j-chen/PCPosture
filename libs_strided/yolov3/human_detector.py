@@ -63,7 +63,7 @@ def arg_parse():
     parser.add_argument('--nms-thresh', dest='nms_thresh', type=float, default=0.4, help='NMS Threshold')
     parser.add_argument('--reso', dest='reso', default=416, type=int, help='Input resolution of the network. '
                         'Increase to increase accuracy. Decrease to increase speed. (160, 416)')
-    parser.add_argument('-wf', '--weight-file', type=str, default= 'demo/libs_strided/checkpoint/yolov3.weights', help='The path'
+    parser.add_argument('-wf', '--weight-file', type=str, default= 'libs_strided/checkpoint/yolov3.weights', help='The path'
                         'of model weight file')
     parser.add_argument('-cf', '--cfg-file', type=str, default=cur_dir + '/cfg/yolov3.cfg', help='weight file')
     parser.add_argument('-a', '--animation', action='store_true', help='output animation')

@@ -35,13 +35,13 @@ def save_ckpt(opt, record, stats):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     torch.save(cascade, os.path.join(save_dir, 'model.th'))
-    np.save(os.path.join(save_dir, 'stats.npy'), stats)
+    np.save(os.path.join(save_dir, 'stats_evoskeleton.npy'), stats)
     print('Model saved at ' + save_dir)
     return True
 
 def load_ckpt(opt):
     cascade = torch.load(os.path.join(opt.ckpt_dir, 'model.th'))
-    stats = np.load(os.path.join(opt.ckpt_dir, 'stats.npy'), allow_pickle=True).item()
+    stats = np.load(os.path.join(opt.ckpt_dir, 'stats_evoskeleton.npy'), allow_pickle=True).item()
     if opt.cuda:
         cascade.cuda()
     return cascade, stats

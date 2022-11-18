@@ -21,8 +21,8 @@ from libs_strided.hrnet.lib.utils.transforms import *
 from libs_strided.hrnet.lib.utils.inference import get_final_preds
 from libs_strided.hrnet.lib.models import pose_hrnet
 
-cfg_dir = 'demo/libs_strided/hrnet/experiments/'
-model_dir = 'demo/libs_strided//checkpoint/'
+cfg_dir = 'libs_strided/hrnet/experiments/'
+model_dir = 'libs_strided//checkpoint/'
 
 # Loading human detector model
 from libs_strided.yolov3.human_detector import load_model as yolo_model
