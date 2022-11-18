@@ -1,17 +1,13 @@
 import os
 import sys
-sys.path.append(os.getcwd())
 import gc
 import cv2
 import glob
 import torch
 import serial
-
-
 import numpy as np
 import depthai as dai
 import tensorflow as tf
-from IPython import embed
 from tensorflow import keras
 
 import matplotlib
@@ -20,23 +16,23 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patheffects as PathEffects
 
-import libs_evoskeleton.model.model as libm
 from libs_strided.hrnet.gen_kpts import gen_frame_kpts
 from libs_strided.preprocess import h36m_coco_format, revise_kpts
+import libs_evoskeleton.model.model as libm
 from libs_evoskeleton.dataset.h36m.data_utils import unNormalizeData
 
 from model_strided.strided_transformer import Model
 from common.camera import normalize_screen_coordinates, camera_to_world
 plt.tight_layout()
 
+
 gpus = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+# limit tensorflow gpu memory, otherwise the program crashes with a mysterious error
+# this has minimal impact (~3ms per frame) on the inference time, not sure why it wanted so much memory
 
 class PoseAnalyzer:
-    def __init__(self, num_joints, pose_connection, re_order_indices, model_path, stats, cascade, input_size, output_size, goodbad_model, figure, threshold, arduino, red, green, font, font_size, font_thickness):
-        self.num_joints = num_joints
-        self.pose_connection = pose_connection
-        self.re_order_indices = re_order_indices
+    def __init__(self, model_path, stats, cascade, input_size, output_size, goodbad_model, figure, threshold, arduino, red, green, font, font_size, font_thickness):
         self.model_path = model_path
         self.stats = stats
         self.cascade = cascade
@@ -57,7 +53,6 @@ class PoseAnalyzer:
         self.font_thickness = font_thickness
 
     def initialize_cascade(self):
-        # initialize cascade?
         for stage_id in range(2):
             stage_model = libm.get_model(
                 stage_id + 1,
@@ -84,11 +79,10 @@ class PoseAnalyzer:
         self.keypoints = revise_kpts(self.keypoints, scores, valid_frames)
         return True
 
-    def normalize(self, skeleton, re_order=None):
+    def normalize(self, skeleton):
         # helper function to lift
         norm_skel = skeleton.copy()
-        if re_order is not None:
-            norm_skel = norm_skel[re_order].reshape(32)
+        norm_skel = norm_skel[[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]].reshape(32)
         norm_skel = norm_skel.reshape(16, 2)
         mean_x = np.mean(norm_skel[:, 0])
         std_x = np.std(norm_skel[:, 0])
@@ -154,7 +148,7 @@ class PoseAnalyzer:
     def lift_and_save(self):
         # lifts 2d kpts into 3d kpts and analyzes it
         skeleton_2d = self.keypoints[0][0]
-        norm_ske_gt = self.normalize(skeleton_2d, self.re_order_indices).reshape(1, -1)
+        norm_ske_gt = self.normalize(skeleton_2d).reshape(1, -1)
         pred = self.get_pred(self.cascade, torch.from_numpy(norm_ske_gt.astype(np.float32)))
         pred = unNormalizeData(pred.data.numpy(), self.stats['mean_3d'], self.stats['std_3d'], self.stats['dim_ignore_3d'])
         ax3 = plt.subplot(1, 1, 1, projection='3d')
@@ -187,7 +181,6 @@ class PoseAnalyzer:
         elif (final == "Bad"):
             font_color = self.red
         cv2.putText(to_modify, final, (300 - text_width // 2, 550), self.font, self.font_size, font_color, self.font_thickness, cv2.LINE_AA)
-        # cv2.imshow("Posture Analyzer", to_modify)
         ax3.clear()
 
         blank = np.ones((600, 1800, 3), np.uint8) * 255
@@ -213,9 +206,6 @@ class PoseAnalyzer:
         cv2.imshow("Posture Analyzer", blank)
 
     def fully_process(self, frame):
-        '''
-        Main function to call, fully processes a given frame.
-        '''
         self.is_available = False
         success = self.gen_pose_2d(frame)
         if (not success):
@@ -227,12 +217,8 @@ class PoseAnalyzer:
         self.threshold = new_threshold
 
 cv2.namedWindow("Posture Analyzer", flags=(cv2.WINDOW_GUI_NORMAL + cv2.WINDOW_AUTOSIZE))
-# cv2.imshow("Posture Analyzer", initial)
 
 poseAnalyzer = PoseAnalyzer(
-    num_joints=16,
-    pose_connection=[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [5, 6], [6, 7], [2, 8], [8, 9], [9, 10]],
-    re_order_indices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16],
     model_path='/home/jeff/Documents/Code/PCPosture/h36m_model.th',
     stats=np.load('/home/jeff/Documents/Code/PCPosture/stats_evoskeleton.npy', allow_pickle=True).item(),
     cascade=libm.get_cascade(),
